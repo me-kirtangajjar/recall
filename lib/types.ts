@@ -13,7 +13,8 @@ export type MemoryMediaType = "image" | "video";
 export interface MemoryMedia {
   id: string;
   zipPath: string;
-  base64: string;
+  objectUrl?: string;
+  base64?: string;
   isCover: boolean;
   mediaType: MemoryMediaType;
   mimeType: string;

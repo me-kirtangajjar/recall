@@ -13,10 +13,12 @@ export function MediaView({
   controls?: boolean;
   autoPlay?: boolean;
 }) {
+  const src = media.objectUrl ?? media.base64 ?? "";
+
   if (media.mediaType === "video") {
     return (
       <video
-        src={media.base64}
+        src={src}
         className={className}
         controls={controls}
         muted={!controls}
@@ -29,5 +31,5 @@ export function MediaView({
   }
 
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={media.base64} alt="" className={className} loading="lazy" />;
+  return <img src={src} alt="" className={className} loading="lazy" />;
 }

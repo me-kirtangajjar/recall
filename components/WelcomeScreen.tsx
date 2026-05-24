@@ -14,16 +14,16 @@ import { hasTimelineStorage } from "@/lib/storageUtils";
 export function WelcomeScreen() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const { loaded, startFresh, replaceMemories } = useMemories();
+  const { loaded, memories, startFresh, replaceMemories } = useMemories();
   const { addToast } = useUI();
   const { importing, readBackup } = useImport();
 
   useEffect(() => {
     document.title = "Recall — A Local-First Memory Timeline";
-    if (hasTimelineStorage()) {
+    if (memories.length > 0 || hasTimelineStorage()) {
       router.replace("/timeline");
     }
-  }, [router]);
+  }, [memories.length, router]);
 
   const start = () => {
     startFresh();

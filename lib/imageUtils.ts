@@ -47,14 +47,13 @@ export async function processMediaFile(file: File, memoryId: string, index: numb
     throw new Error("That file type is not supported. Try a common image or video file.");
   }
 
-  const originalDataUrl = await readFileAsDataUrl(file);
   const extension = getFileExtension(file.name) || extensionFromMime(file.type) || (mediaType === "video" ? "mp4" : "jpg");
 
   return {
     image: {
       id: createId(),
       zipPath: `media/memory-${memoryId}-media-${index}.${extension}`,
-      base64: originalDataUrl,
+      objectUrl: URL.createObjectURL(file),
       isCover: false,
       mediaType,
       mimeType: file.type || mimeFromExtension(extension) || (mediaType === "video" ? "video/mp4" : "image/jpeg"),

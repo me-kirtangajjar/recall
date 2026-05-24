@@ -3,6 +3,7 @@ import type { Memory, MemoryMedia, TimelineExport } from "@/lib/types";
 import { base64ToBlob, getFileExtension, getMimeFromDataUrl, readFileAsDataUrl } from "@/lib/imageUtils";
 import { inferMediaTypeFromStoredValue, normalizeImages, stripOriginalFiles } from "@/lib/utils";
 import { VERSION } from "@/lib/storageUtils";
+import { getMediaBlob } from "@/lib/dbUtils";
 
 export interface BuildZipResult {
   blob: Blob;
@@ -37,8 +38,10 @@ export async function buildTimelineZip(
       const image = memory.images[index];
       const extension = image.fileName.split(".").pop() || (image.mediaType === "video" ? "mp4" : "jpg");
       const zipPath = `memory-${memory.id}-media-${index}.${extension}`;
-      const content = image.originalFile ?? base64ToBlob(image.base64);
-      mediaFolder?.file(zipPath, content);
+      const content = image.originalFile ?? (await getMediaBlob(image.id)) ?? (image.base64 ? base64ToBlob(image.base64) : null);
+      if (content) {
+        mediaFolder?.file(zipPath, content);
+      }
       processed += 1;
       onProgress?.(imageCount === 0 ? 50 : Math.round((processed / imageCount) * 70));
     }

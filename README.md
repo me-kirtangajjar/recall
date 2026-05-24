@@ -23,7 +23,7 @@ Your memories stay in your browser unless you choose to export a backup.
 - Add multiple photos and videos per memory
 - Preserve original media quality without compression
 - Choose a cover photo or video for each memory
-- Auto-save every change to localStorage
+- Auto-save every change to browser storage
 - Export a ZIP backup with `timeline.json` and original media files
 - Import a ZIP backup and replace or merge with the current timeline
 - Search memories by title, description, or tag
@@ -37,19 +37,21 @@ Your memories stay in your browser unless you choose to export a backup.
 
 Recall is designed as a private, local-first app.
 
-Primary storage is browser `localStorage` under:
+Primary storage is browser IndexedDB:
 
 ```text
-recall_data
+recall_db
 ```
 
-The app also reads the old `timelines_data` key for migration, then saves future data under `recall_data`.
+Recall stores memory metadata and original media blobs in IndexedDB. This avoids the synchronous writes and small quota limits of `localStorage`, and keeps large photos/videos out of JSON strings.
+
+The app also reads older `localStorage` data from `recall_data` or `timelines_data` for migration, then moves that archive into IndexedDB.
 
 ZIP backup is optional. It is only created when the user explicitly chooses **Save Backup**. Import is also user-triggered through a local file picker.
 
 ## Media Handling
 
-Recall stores uploaded media as original data URLs in browser storage. It does not resize, compress, transcode, or reduce quality.
+Recall stores uploaded media as original `Blob`/`File` data in IndexedDB. It does not resize, compress, transcode, or reduce quality.
 
 Supported uploads include common image and video formats such as:
 
@@ -60,7 +62,7 @@ Browser preview support can vary for formats like HEIC, AVI, or MKV, but Recall 
 
 ## Important Storage Note
 
-Because Recall keeps media at original quality, large videos and high-resolution photos can fill browser storage quickly. If localStorage quota is exceeded, the app shows a friendly warning and encourages exporting a ZIP backup.
+Because Recall keeps media at original quality, large videos and high-resolution photos can still fill browser storage. If quota is exceeded, the app shows a friendly warning and encourages exporting a ZIP backup.
 
 For very large personal archives, frequent ZIP backups are recommended.
 
@@ -74,7 +76,8 @@ For very large personal archives, frequent ZIP backups are recommended.
 - Lucide React
 - JSZip
 - File Saver
-- Browser FileReader API
+- IndexedDB
+- Browser File, Blob, and FileReader APIs
 
 ## Getting Started
 
@@ -137,14 +140,15 @@ components/
   ui/                      Shared interface components
 
 context/
-  MemoriesContext.tsx      Memory state and localStorage sync
+  MemoriesContext.tsx      Memory state and IndexedDB sync
   UIContext.tsx            Toast state
 
 lib/
+  dbUtils.ts               IndexedDB records and media blob storage
   dateUtils.ts             Date formatting and daily memory logic
-  imageUtils.ts            Original-quality media file reading
+  imageUtils.ts            Original-quality media file handling
   searchUtils.ts           Search/filter helpers
-  storageUtils.ts          localStorage read/write/migration
+  storageUtils.ts          Legacy localStorage migration
   types.ts                 Shared TypeScript types
   zipUtils.ts              ZIP export/import logic
 ```

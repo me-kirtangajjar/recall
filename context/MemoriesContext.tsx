@@ -7,15 +7,19 @@ import {
   useEffect,
   useMemo,
   useReducer,
-  useRef,
   type ReactNode,
 } from "react";
 import type { Memory } from "@/lib/types";
 import {
-  clearTimelineStorage,
-  readTimelineStorage,
-  writeTimelineStorage,
-} from "@/lib/storageUtils";
+  clearRecallDb,
+  deleteMemoryFromDb,
+  hydrateLegacyMedia,
+  mergeMemoriesIntoDb,
+  readMemoriesFromDb,
+  replaceMemoriesInDb,
+  saveMemoryToDb,
+} from "@/lib/dbUtils";
+import { clearTimelineStorage, readTimelineStorage } from "@/lib/storageUtils";
 import { normalizeImages } from "@/lib/utils";
 import { useUI } from "@/context/UIContext";
 
@@ -126,33 +130,67 @@ export function MemoriesProvider({ children }: { children: ReactNode }) {
     hadStoredDataOnLoad: false,
     highlightedId: null,
   });
-  const didHydrate = useRef(false);
 
-  useEffect(() => {
-    const result = readTimelineStorage();
-    dispatch({
-      type: "LOAD",
-      memories: result.data?.memories ?? [],
-      hadStoredDataOnLoad: result.existed && (result.data?.memories.length ?? 0) > 0,
-    });
-    didHydrate.current = true;
-  }, []);
-
-  useEffect(() => {
-    if (!didHydrate.current || !state.loaded) {
-      return;
-    }
-
-    const result = writeTimelineStorage(state.memories);
-    if (!result.ok && result.quotaExceeded) {
+  const reportStorageError = useCallback(
+    (error: unknown) => {
       addToast({
         type: "warning",
-        title: "Storage is getting tight",
+        title: "Recall could not finish saving",
         description:
-          "You're running low on local storage. Export a ZIP backup and consider clearing old memories.",
+          error instanceof DOMException && error.name === "QuotaExceededError"
+            ? "This browser is running low on storage. Export a ZIP backup and remove large media if needed."
+            : "Export a ZIP backup before continuing, then refresh and try again.",
       });
-    }
-  }, [addToast, state.loaded, state.memories]);
+    },
+    [addToast],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrate = async () => {
+      try {
+        const dbMemories = await readMemoriesFromDb();
+        if (dbMemories.length > 0) {
+          if (!cancelled) {
+            dispatch({ type: "LOAD", memories: dbMemories, hadStoredDataOnLoad: true });
+          }
+          return;
+        }
+
+        const legacy = readTimelineStorage();
+        const legacyMemories =
+          legacy.data?.memories.map((memory) => ({
+            ...memory,
+            images: memory.images.map(hydrateLegacyMedia),
+          })) ?? [];
+
+        if (legacyMemories.length > 0) {
+          await replaceMemoriesInDb(legacyMemories);
+          clearTimelineStorage();
+        }
+
+        if (!cancelled) {
+          dispatch({
+            type: "LOAD",
+            memories: legacyMemories,
+            hadStoredDataOnLoad: legacy.existed && legacyMemories.length > 0,
+          });
+        }
+      } catch (error) {
+        reportStorageError(error);
+        if (!cancelled) {
+          dispatch({ type: "LOAD", memories: [], hadStoredDataOnLoad: false });
+        }
+      }
+    };
+
+    void hydrate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reportStorageError]);
 
   useEffect(() => {
     if (!state.highlightedId) {
@@ -163,20 +201,62 @@ export function MemoriesProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timeout);
   }, [state.highlightedId]);
 
-  const startFresh = useCallback(() => dispatch({ type: "START_FRESH" }), []);
-  const addMemory = useCallback((memory: Memory) => dispatch({ type: "ADD", memory }), []);
-  const updateMemory = useCallback((memory: Memory) => dispatch({ type: "UPDATE", memory }), []);
-  const deleteMemory = useCallback((id: string) => dispatch({ type: "DELETE", id }), []);
-  const replaceMemories = useCallback(
-    (memories: Memory[], hadStoredDataOnLoad?: boolean) =>
-      dispatch({ type: "REPLACE", memories, hadStoredDataOnLoad }),
-    [],
+  const startFresh = useCallback(() => {
+    clearTimelineStorage();
+    void clearRecallDb().catch(reportStorageError);
+    dispatch({ type: "START_FRESH" });
+  }, [reportStorageError]);
+
+  const addMemory = useCallback(
+    (memory: Memory) => {
+      dispatch({ type: "ADD", memory });
+      void saveMemoryToDb(memory).catch(reportStorageError);
+    },
+    [reportStorageError],
   );
-  const mergeMemories = useCallback((memories: Memory[]) => dispatch({ type: "MERGE", memories }), []);
+
+  const updateMemory = useCallback(
+    (memory: Memory) => {
+      dispatch({ type: "UPDATE", memory });
+      void saveMemoryToDb(memory).catch(reportStorageError);
+    },
+    [reportStorageError],
+  );
+
+  const deleteMemory = useCallback(
+    (id: string) => {
+      const selected = state.memories.find((memory) => memory.id === id);
+      dispatch({ type: "DELETE", id });
+      if (selected) {
+        void deleteMemoryFromDb(selected).catch(reportStorageError);
+      }
+    },
+    [reportStorageError, state.memories],
+  );
+
+  const replaceMemories = useCallback(
+    (memories: Memory[], hadStoredDataOnLoad?: boolean) => {
+      clearTimelineStorage();
+      dispatch({ type: "REPLACE", memories, hadStoredDataOnLoad });
+      void replaceMemoriesInDb(memories).catch(reportStorageError);
+    },
+    [reportStorageError],
+  );
+
+  const mergeMemories = useCallback(
+    (memories: Memory[]) => {
+      clearTimelineStorage();
+      dispatch({ type: "MERGE", memories });
+      void mergeMemoriesIntoDb(memories).catch(reportStorageError);
+    },
+    [reportStorageError],
+  );
+
   const resetTimeline = useCallback(() => {
     clearTimelineStorage();
+    void clearRecallDb().catch(reportStorageError);
     dispatch({ type: "RESET" });
-  }, []);
+  }, [reportStorageError]);
 
   const value = useMemo(
     () => ({

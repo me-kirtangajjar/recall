@@ -36,7 +36,6 @@ export function stripOriginalFiles(memory: Memory): Memory {
     images: memory.images.map((image) => ({
       id: image.id,
       zipPath: image.zipPath,
-      base64: image.base64,
       isCover: image.isCover,
       mediaType: image.mediaType,
       mimeType: image.mimeType,

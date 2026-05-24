@@ -54,6 +54,7 @@ export function TimelineApp() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [visibleWindow, setVisibleWindow] = useState({ key: "", limit: 80 });
   const [dismissedThisDay, setDismissedThisDay] = useState(
     () => typeof window !== "undefined" && sessionStorage.getItem(`recall_this_day_${todayKey()}`) === "1",
   );
@@ -94,6 +95,12 @@ export function TimelineApp() {
   const visibleMemories = useMemo(
     () => sortMemories(filterMemories(memories, { query, tag: activeTag }), sortOrder),
     [activeTag, memories, query, sortOrder],
+  );
+  const visibleKey = `${activeTag}:${query}:${sortOrder}:${viewMode}`;
+  const effectiveVisibleLimit = visibleWindow.key === visibleKey ? visibleWindow.limit : 80;
+  const renderedMemories = useMemo(
+    () => visibleMemories.slice(0, effectiveVisibleLimit),
+    [effectiveVisibleLimit, visibleMemories],
   );
   const counts = useMemo(() => getTagCounts(memories, query), [memories, query]);
   const searchActive = searchOpen && query.trim().length > 0;
@@ -267,11 +274,27 @@ export function TimelineApp() {
                 <p className="mt-2 text-[var(--muted)]">Try a different word or tag.</p>
               </div>
             ) : viewMode === "timeline" ? (
-              <TimelineView memories={visibleMemories} query={query} highlightedId={highlightedId} onOpen={setSelectedMemory} />
+              <TimelineView memories={renderedMemories} query={query} highlightedId={highlightedId} onOpen={setSelectedMemory} />
             ) : (
-              <YearView memories={visibleMemories} query={query} highlightedId={highlightedId} onOpen={setSelectedMemory} />
+              <YearView memories={renderedMemories} query={query} highlightedId={highlightedId} onOpen={setSelectedMemory} />
             )}
           </div>
+
+          {renderedMemories.length < visibleMemories.length ? (
+            <div className="mt-8 flex justify-center">
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  setVisibleWindow((current) => ({
+                    key: visibleKey,
+                    limit: (current.key === visibleKey ? current.limit : 80) + 80,
+                  }))
+                }
+              >
+                Show more memories
+              </Button>
+            </div>
+          ) : null}
         </main>
 
         <AddEditMemoryPanel open={panelOpen} memory={editingMemory} onClose={() => setPanelOpen(false)} />
