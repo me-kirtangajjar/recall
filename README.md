@@ -1,36 +1,152 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Recall
+
+A local-first memory timeline for preserving life's most meaningful moments.
+
+Recall lets you create beautiful memories with photos, videos, stories, tags, dates, and times. Everything is stored privately on your device, with seamless ZIP backup and restore support when you want to move your timeline somewhere else.
+
+## Why Recall
+
+Most memory apps assume your private life should live in someone else's cloud. Recall takes the opposite approach.
+
+- No accounts
+- No backend
+- No database
+- No analytics
+- No cookies
+- No cloud uploads
+
+Your memories stay in your browser unless you choose to export a backup.
+
+## Features
+
+- Create, edit, and delete memories
+- Add multiple photos and videos per memory
+- Preserve original media quality without compression
+- Choose a cover photo or video for each memory
+- Auto-save every change to localStorage
+- Export a ZIP backup with `timeline.json` and original media files
+- Import a ZIP backup and replace or merge with the current timeline
+- Search memories by title, description, or tag
+- Filter by preset tags like Travel, Family, Love, Achievement, and Everyday
+- Switch between timeline view and year/chapter view
+- See "This Day in History" for memories from past years
+- See a deterministic "Memory of the Day"
+- Fully client-side and deployable on Vercel's free tier
+
+## Privacy Model
+
+Recall is designed as a private, local-first app.
+
+Primary storage is browser `localStorage` under:
+
+```text
+recall_data
+```
+
+The app also reads the old `timelines_data` key for migration, then saves future data under `recall_data`.
+
+ZIP backup is optional. It is only created when the user explicitly chooses **Save Backup**. Import is also user-triggered through a local file picker.
+
+## Media Handling
+
+Recall stores uploaded media as original data URLs in browser storage. It does not resize, compress, transcode, or reduce quality.
+
+Supported uploads include common image and video formats such as:
+
+- Images: JPG, PNG, WEBP, GIF, AVIF, HEIC, HEIF, BMP, TIFF, SVG
+- Videos: MP4, MOV, WEBM, AVI, MKV, MPEG, OGV, 3GP, MTS, M2TS
+
+Browser preview support can vary for formats like HEIC, AVI, or MKV, but Recall still preserves the original file data for backup.
+
+## Important Storage Note
+
+Because Recall keeps media at original quality, large videos and high-resolution photos can fill browser storage quickly. If localStorage quota is exceeded, the app shows a friendly warning and encourages exporting a ZIP backup.
+
+For very large personal archives, frequent ZIP backups are recommended.
+
+## Tech Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- React Context + `useReducer`
+- Framer Motion
+- Lucide React
+- JSZip
+- File Saver
+- Browser FileReader API
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Starts the local development server.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Creates a production build.
 
-## Deploy on Vercel
+```bash
+npm run start
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Runs the production build locally.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+```
+
+Runs ESLint.
+
+## Project Structure
+
+```text
+app/
+  page.tsx                 Welcome screen
+  timeline/page.tsx        Main timeline route
+  layout.tsx               Root layout, fonts, providers
+
+components/
+  export/                  Import/export hooks
+  memory/                  Add/edit panel and detail modal
+  timeline/                Timeline UI, year view, cards, banners
+  ui/                      Shared interface components
+
+context/
+  MemoriesContext.tsx      Memory state and localStorage sync
+  UIContext.tsx            Toast state
+
+lib/
+  dateUtils.ts             Date formatting and daily memory logic
+  imageUtils.ts            Original-quality media file reading
+  searchUtils.ts           Search/filter helpers
+  storageUtils.ts          localStorage read/write/migration
+  types.ts                 Shared TypeScript types
+  zipUtils.ts              ZIP export/import logic
+```
+
+User memories are not deployed or synced. They remain in each user's browser storage unless that user exports and imports a backup.
