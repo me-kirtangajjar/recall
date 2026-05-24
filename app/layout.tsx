@@ -15,8 +15,9 @@ const body = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Timelines — Your Life, Remembered",
-  description: "A private, local-first life memory timeline.",
+  title: "Recall — A Local-First Memory Timeline",
+  description:
+    "Create beautiful memories with photos, stories, and dates — all stored privately on your device with seamless backup and restore support.",
   icons: {
     icon: "/icon.svg",
   },

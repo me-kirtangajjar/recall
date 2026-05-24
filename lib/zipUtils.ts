@@ -63,7 +63,7 @@ export async function buildTimelineZip(
   );
 
   const date = new Date().toISOString().slice(0, 10);
-  return { blob, filename: `timelines-backup-${date}.zip` };
+  return { blob, filename: `recall-backup-${date}.zip` };
 }
 
 export async function parseTimelineZip(file: File): Promise<Memory[]> {
@@ -71,7 +71,7 @@ export async function parseTimelineZip(file: File): Promise<Memory[]> {
   const timelineFile = zip.file("timeline.json");
 
   if (!timelineFile) {
-    throw new Error("This doesn't look like a valid Timelines backup file.");
+    throw new Error("This doesn't look like a valid Recall backup file.");
   }
 
   let parsed: Partial<TimelineExport>;
@@ -82,7 +82,7 @@ export async function parseTimelineZip(file: File): Promise<Memory[]> {
   }
 
   if (!parsed.version || !Array.isArray(parsed.memories)) {
-    throw new Error("This doesn't look like a valid Timelines backup file.");
+    throw new Error("This doesn't look like a valid Recall backup file.");
   }
 
   const memories: Memory[] = [];

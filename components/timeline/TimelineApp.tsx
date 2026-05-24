@@ -55,10 +55,10 @@ export function TimelineApp() {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [dismissedThisDay, setDismissedThisDay] = useState(
-    () => typeof window !== "undefined" && sessionStorage.getItem(`timelines_this_day_${todayKey()}`) === "1",
+    () => typeof window !== "undefined" && sessionStorage.getItem(`recall_this_day_${todayKey()}`) === "1",
   );
   const [dismissedMotd, setDismissedMotd] = useState(
-    () => typeof window !== "undefined" && sessionStorage.getItem(`timelines_motd_${todayKey()}`) === "1",
+    () => typeof window !== "undefined" && sessionStorage.getItem(`recall_motd_${todayKey()}`) === "1",
   );
 
   const openAddPanel = useCallback(() => {
@@ -67,7 +67,7 @@ export function TimelineApp() {
   }, []);
 
   useEffect(() => {
-    document.title = "Timelines — Your Life, Remembered";
+    document.title = "Recall — A Local-First Memory Timeline";
   }, []);
 
   useEffect(() => {
@@ -127,12 +127,12 @@ export function TimelineApp() {
   };
 
   const dismissThisDay = () => {
-    sessionStorage.setItem(`timelines_this_day_${todayKey()}`, "1");
+    sessionStorage.setItem(`recall_this_day_${todayKey()}`, "1");
     setDismissedThisDay(true);
   };
 
   const dismissMotd = () => {
-    sessionStorage.setItem(`timelines_motd_${todayKey()}`, "1");
+    sessionStorage.setItem(`recall_motd_${todayKey()}`, "1");
     setDismissedMotd(true);
   };
 
@@ -147,7 +147,7 @@ export function TimelineApp() {
         <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--background)]/90 backdrop-blur">
           <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
             <div>
-              <p className="font-serif text-3xl leading-none text-[var(--text)]">Timelines</p>
+              <p className="font-serif text-3xl leading-none text-[var(--text)]">Recall</p>
               <p className="metadata mt-1 text-[var(--muted)]">Private on this device</p>
             </div>
             <div className="flex items-center gap-2">

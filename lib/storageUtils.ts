@@ -1,7 +1,8 @@
 import type { Memory, TimelineData } from "@/lib/types";
 import { stripOriginalFiles } from "@/lib/utils";
 
-export const STORAGE_KEY = "timelines_data";
+export const STORAGE_KEY = "recall_data";
+const LEGACY_STORAGE_KEY = "timelines_data";
 export const VERSION = "1.0";
 
 export interface StorageReadResult {
@@ -19,7 +20,8 @@ export function readTimelineStorage(): StorageReadResult {
     return { data: null, existed: false };
   }
 
-  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const raw =
+    window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY);
   if (!raw) {
     return { data: null, existed: false };
   }
@@ -57,6 +59,7 @@ export function writeTimelineStorage(memories: Memory[]): StorageWriteResult {
 
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     return { ok: true, quotaExceeded: false };
   } catch (error) {
     return { ok: false, quotaExceeded: isQuotaExceeded(error) };
@@ -68,12 +71,16 @@ export function hasTimelineStorage(): boolean {
     return false;
   }
 
-  return window.localStorage.getItem(STORAGE_KEY) !== null;
+  return (
+    window.localStorage.getItem(STORAGE_KEY) !== null ||
+    window.localStorage.getItem(LEGACY_STORAGE_KEY) !== null
+  );
 }
 
 export function clearTimelineStorage(): void {
   if (typeof window !== "undefined") {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
   }
 }
 

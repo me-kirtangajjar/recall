@@ -19,7 +19,7 @@ export function WelcomeScreen() {
   const { importing, readBackup } = useImport();
 
   useEffect(() => {
-    document.title = "Timelines — Your Life, Remembered";
+    document.title = "Recall — A Local-First Memory Timeline";
     if (hasTimelineStorage()) {
       router.replace("/timeline");
     }
@@ -62,11 +62,13 @@ export function WelcomeScreen() {
         <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-full border border-[var(--border)] bg-white shadow-soft">
           <Sparkles className="h-7 w-7 text-[var(--accent)]" aria-hidden="true" />
         </div>
-        <p className="metadata mb-4 text-[var(--accent)]">A private life archive</p>
-        <h1 className="font-serif text-6xl leading-[1.02] text-[var(--text)] sm:text-7xl">Timelines</h1>
-        <p className="mt-5 text-xl leading-9 text-[var(--muted)]">Your life, remembered beautifully.</p>
+        <p className="metadata mb-4 text-[var(--accent)]">A local-first memory timeline</p>
+        <h1 className="font-serif text-6xl leading-[1.02] text-[var(--text)] sm:text-7xl">Recall</h1>
+        <p className="mt-5 text-xl leading-9 text-[var(--muted)]">
+          Preserving life&apos;s most meaningful moments.
+        </p>
         <p className="mx-auto mt-4 max-w-xl text-base leading-8 text-[var(--muted)]">
-          No signup, no cloud, no tracking. Your memories and photos stay inside this browser until you choose to export a backup.
+          Create beautiful memories with photos, stories, and dates — all stored privately on your device with seamless backup and restore support.
         </p>
         <div className="mx-auto mt-8 flex max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
           <Button className="flex-1" onClick={start}>

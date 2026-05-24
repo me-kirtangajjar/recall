@@ -23,7 +23,7 @@ export function useImport() {
         description:
           error instanceof Error
             ? error.message
-            : "This doesn't look like a valid Timelines backup file.",
+            : "This doesn't look like a valid Recall backup file.",
       });
       return null;
     } finally {
