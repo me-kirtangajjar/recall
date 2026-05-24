@@ -1,7 +1,7 @@
 import JSZip from "jszip";
-import type { Memory, TimelineExport } from "@/lib/types";
-import { base64ToBlob, readFileAsDataUrl } from "@/lib/imageUtils";
-import { normalizeImages, stripOriginalFiles } from "@/lib/utils";
+import type { Memory, MemoryMedia, TimelineExport } from "@/lib/types";
+import { base64ToBlob, getFileExtension, getMimeFromDataUrl, readFileAsDataUrl } from "@/lib/imageUtils";
+import { inferMediaTypeFromStoredValue, normalizeImages, stripOriginalFiles } from "@/lib/utils";
 import { VERSION } from "@/lib/storageUtils";
 
 export interface BuildZipResult {
@@ -14,16 +14,17 @@ export async function buildTimelineZip(
   onProgress?: (progress: number) => void,
 ): Promise<BuildZipResult> {
   const zip = new JSZip();
-  const imagesFolder = zip.folder("images");
+  const mediaFolder = zip.folder("media");
   const exportedMemories: Memory[] = [];
   let imageCount = 0;
 
   for (const memory of memories) {
     const images = normalizeImages(memory.images).map((image, index) => {
       imageCount += 1;
+      const extension = image.fileName.split(".").pop() || (image.mediaType === "video" ? "mp4" : "jpg");
       return {
         ...image,
-        zipPath: `images/memory-${memory.id}-img-${index}.jpg`,
+        zipPath: `media/memory-${memory.id}-media-${index}.${extension}`,
       };
     });
 
@@ -34,9 +35,10 @@ export async function buildTimelineZip(
   for (const memory of memories) {
     for (let index = 0; index < memory.images.length; index += 1) {
       const image = memory.images[index];
-      const zipPath = `memory-${memory.id}-img-${index}.jpg`;
+      const extension = image.fileName.split(".").pop() || (image.mediaType === "video" ? "mp4" : "jpg");
+      const zipPath = `memory-${memory.id}-media-${index}.${extension}`;
       const content = image.originalFile ?? base64ToBlob(image.base64);
-      imagesFolder?.file(zipPath, content);
+      mediaFolder?.file(zipPath, content);
       processed += 1;
       onProgress?.(imageCount === 0 ? 50 : Math.round((processed / imageCount) * 70));
     }
@@ -58,7 +60,7 @@ export async function buildTimelineZip(
 
   zip.file("timeline.json", JSON.stringify(timeline, null, 2));
   const blob = await zip.generateAsync(
-    { type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } },
+    { type: "blob", compression: "STORE" },
     (metadata) => onProgress?.(70 + Math.round(metadata.percent * 0.3)),
   );
 
@@ -87,21 +89,37 @@ export async function parseTimelineZip(file: File): Promise<Memory[]> {
 
   const memories: Memory[] = [];
   for (const memory of parsed.memories) {
-    const images = [];
+    const images: MemoryMedia[] = [];
 
     for (const image of memory.images ?? []) {
       const fileFromZip = image.zipPath ? zip.file(image.zipPath) : null;
       if (fileFromZip) {
         const blob = await fileFromZip.async("blob");
+        const fileName = image.fileName ?? image.zipPath.split("/").pop() ?? "memory-media";
+        const base64 = await readFileAsDataUrl(blob);
+        const mimeType =
+          image.mimeType || blob.type || getMimeFromDataUrl(base64) || fallbackMimeType(fileName, image.base64);
         images.push({
           ...image,
-          base64: await readFileAsDataUrl(blob),
-          originalFile: new File([blob], image.zipPath.split("/").pop() ?? "memory-image.jpg", {
-            type: blob.type || "image/jpeg",
+          base64,
+          mediaType: image.mediaType ?? inferMediaTypeFromStoredValue({ base64, mimeType, fileName }),
+          mimeType,
+          fileName,
+          fileSize: image.fileSize || blob.size,
+          originalFile: new File([blob], fileName, {
+            type: mimeType,
           }),
         });
       } else if (image.base64) {
-        images.push(image);
+        const fileName = image.fileName ?? image.zipPath?.split("/").pop() ?? "memory-media";
+        const mimeType = image.mimeType || getMimeFromDataUrl(image.base64) || fallbackMimeType(fileName, image.base64);
+        images.push({
+          ...image,
+          mediaType: image.mediaType ?? inferMediaTypeFromStoredValue({ base64: image.base64, mimeType, fileName }),
+          mimeType,
+          fileName,
+          fileSize: image.fileSize ?? base64ToBlob(image.base64).size,
+        });
       }
     }
 
@@ -115,4 +133,48 @@ export async function parseTimelineZip(file: File): Promise<Memory[]> {
   }
 
   return memories;
+}
+
+function fallbackMimeType(fileName: string, base64?: string): string {
+  const fromDataUrl = base64 ? getMimeFromDataUrl(base64) : null;
+  if (fromDataUrl) {
+    return fromDataUrl;
+  }
+
+  const extension = getFileExtension(fileName);
+  if (["mp4", "m4v"].includes(extension)) {
+    return "video/mp4";
+  }
+  if (extension === "mov") {
+    return "video/quicktime";
+  }
+  if (extension === "webm") {
+    return "video/webm";
+  }
+  if (extension === "avi") {
+    return "video/x-msvideo";
+  }
+  if (extension === "mkv") {
+    return "video/x-matroska";
+  }
+  if (["mpeg", "mpg"].includes(extension)) {
+    return "video/mpeg";
+  }
+  if (extension === "ogv") {
+    return "video/ogg";
+  }
+  if (["3gp", "3g2"].includes(extension)) {
+    return "video/3gpp";
+  }
+  if (["mts", "m2ts"].includes(extension)) {
+    return "video/mp2t";
+  }
+  if (["jpg", "jpeg"].includes(extension)) {
+    return "image/jpeg";
+  }
+  if (extension) {
+    return `image/${extension}`;
+  }
+
+  return "application/octet-stream";
 }

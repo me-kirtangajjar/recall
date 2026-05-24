@@ -1,4 +1,4 @@
-import type { Memory, MemoryImage } from "@/lib/types";
+import type { Memory, MemoryMedia } from "@/lib/types";
 
 export function createId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -12,11 +12,11 @@ export function cn(...classes: Array<string | false | null | undefined>): string
   return classes.filter(Boolean).join(" ");
 }
 
-export function getCoverImage(memory: Memory): MemoryImage | undefined {
+export function getCoverImage(memory: Memory): MemoryMedia | undefined {
   return memory.images.find((image) => image.isCover) ?? memory.images[0];
 }
 
-export function normalizeImages(images: MemoryImage[]): MemoryImage[] {
+export function normalizeImages(images: MemoryMedia[]): MemoryMedia[] {
   if (images.length === 0) {
     return [];
   }
@@ -38,8 +38,30 @@ export function stripOriginalFiles(memory: Memory): Memory {
       zipPath: image.zipPath,
       base64: image.base64,
       isCover: image.isCover,
+      mediaType: image.mediaType,
+      mimeType: image.mimeType,
+      fileName: image.fileName,
+      fileSize: image.fileSize,
     })),
   };
+}
+
+export function inferMediaTypeFromStoredValue(value: {
+  base64?: string;
+  mimeType?: string;
+  fileName?: string;
+}): "image" | "video" {
+  const mimeType = value.mimeType || value.base64?.match(/^data:(.*?);/)?.[1] || "";
+  if (mimeType.startsWith("video/")) {
+    return "video";
+  }
+
+  const extension = value.fileName?.split(".").pop()?.toLowerCase() ?? "";
+  if (["mp4", "m4v", "mov", "webm", "avi", "mkv", "mpeg", "mpg", "ogv", "3gp", "3g2", "mts", "m2ts"].includes(extension)) {
+    return "video";
+  }
+
+  return "image";
 }
 
 export function getTodayInputValue(): string {

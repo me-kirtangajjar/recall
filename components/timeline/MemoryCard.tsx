@@ -1,13 +1,14 @@
 "use client";
 
 import { memo } from "react";
-import { Image as ImageIcon } from "lucide-react";
+import { Images, Video } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Memory } from "@/lib/types";
 import { TagPill } from "@/components/ui/TagPill";
 import { formatDate } from "@/lib/dateUtils";
 import { cn, getCoverImage } from "@/lib/utils";
 import { splitHighlight } from "@/lib/searchUtils";
+import { MediaView } from "@/components/ui/MediaView";
 
 export const MemoryCard = memo(function MemoryCard({
   memory,
@@ -53,7 +54,7 @@ export const MemoryCard = memo(function MemoryCard({
             {memory.tag ? <TagPill className="pointer-events-none px-2 py-1">{memory.tag}</TagPill> : null}
             {memory.images.length > 1 ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-1 text-xs font-semibold text-[var(--muted)]">
-                <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                <Images className="h-3.5 w-3.5" aria-hidden="true" />
                 {memory.images.length}
               </span>
             ) : null}
@@ -68,9 +69,13 @@ export const MemoryCard = memo(function MemoryCard({
           ) : null}
         </div>
         {cover ? (
-          <div className="h-[90px] w-[120px] shrink-0 overflow-hidden rounded-xl bg-stone-100 max-[420px]:hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cover.base64} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <div className="relative h-[90px] w-[120px] shrink-0 overflow-hidden rounded-xl bg-stone-100 max-[420px]:hidden">
+            <MediaView media={cover} className="h-full w-full object-cover" />
+            {cover.mediaType === "video" ? (
+              <div className="absolute right-2 top-2 rounded-full bg-white/90 p-1 text-[var(--text)]">
+                <Video className="h-3.5 w-3.5" aria-hidden="true" />
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

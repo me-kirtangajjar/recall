@@ -198,7 +198,7 @@ function PanelContent({ memory, onClose }: { memory: Memory | null; onClose: () 
           ) : null}
 
           <div>
-            <span className="label-text">Images</span>
+            <span className="label-text">Photos and videos</span>
             <ImageUpload
               memoryId={memoryId}
               images={images}

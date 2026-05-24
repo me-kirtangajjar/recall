@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { MemoryImage } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { MediaView } from "@/components/ui/MediaView";
 
 export function ImageCarousel({ images }: { images: MemoryImage[] }) {
   const [index, setIndex] = useState(0);
@@ -19,8 +20,7 @@ export function ImageCarousel({ images }: { images: MemoryImage[] }) {
 
   return (
     <div className="relative bg-stone-100">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={active.base64} alt="" className="h-[280px] w-full object-cover sm:h-[400px]" loading="lazy" />
+      <MediaView media={active} className="h-[280px] w-full object-cover sm:h-[400px]" controls={active.mediaType === "video"} />
       {images.length > 1 ? (
         <>
           <Button

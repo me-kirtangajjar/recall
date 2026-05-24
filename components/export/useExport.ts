@@ -22,7 +22,7 @@ export function useExport() {
       addToast({
         type: "error",
         title: "Backup could not be saved",
-        description: "Try again in a moment, or remove a very large image and retry.",
+        description: "Try again in a moment, or remove a very large media file and retry.",
       });
     } finally {
       setProgress(0);

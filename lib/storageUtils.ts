@@ -1,5 +1,5 @@
 import type { Memory, TimelineData } from "@/lib/types";
-import { stripOriginalFiles } from "@/lib/utils";
+import { inferMediaTypeFromStoredValue, stripOriginalFiles } from "@/lib/utils";
 
 export const STORAGE_KEY = "recall_data";
 const LEGACY_STORAGE_KEY = "timelines_data";
@@ -106,13 +106,35 @@ function sanitizeMemory(value: unknown): Memory {
     description: typeof memory.description === "string" ? memory.description : "",
     tag: memory.tag ?? null,
     images: Array.isArray(memory.images)
-      ? memory.images.map((image, index) => ({
-          id: typeof image.id === "string" ? image.id : crypto.randomUUID(),
-          zipPath:
-            typeof image.zipPath === "string" ? image.zipPath : `images/memory-${memory.id}-img-${index}.jpg`,
-          base64: typeof image.base64 === "string" ? image.base64 : "",
-          isCover: Boolean(image.isCover),
-        }))
+      ? memory.images.map((image, index) => {
+          const mediaType =
+            image.mediaType === "video" || image.mediaType === "image"
+              ? image.mediaType
+              : inferMediaTypeFromStoredValue(image);
+          const fallbackExtension = mediaType === "video" ? "mp4" : "jpg";
+
+          return {
+            id: typeof image.id === "string" ? image.id : crypto.randomUUID(),
+            zipPath:
+              typeof image.zipPath === "string"
+                ? image.zipPath
+                : `media/memory-${memory.id}-media-${index}.${fallbackExtension}`,
+            base64: typeof image.base64 === "string" ? image.base64 : "",
+            isCover: Boolean(image.isCover),
+            mediaType,
+            mimeType:
+              typeof image.mimeType === "string"
+                ? image.mimeType
+                : mediaType === "video"
+                  ? "video/mp4"
+                  : "image/jpeg",
+            fileName:
+              typeof image.fileName === "string"
+                ? image.fileName
+                : `memory-media-${index}.${fallbackExtension}`,
+            fileSize: typeof image.fileSize === "number" ? image.fileSize : 0,
+          };
+        })
       : [],
     createdAt:
       typeof memory.createdAt === "string" ? memory.createdAt : new Date().toISOString(),

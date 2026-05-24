@@ -5,6 +5,7 @@ import type { Memory } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { getCoverImage } from "@/lib/utils";
 import { yearsAgo } from "@/lib/dateUtils";
+import { MediaView } from "@/components/ui/MediaView";
 
 export function ThisDayBanner({ memory, onDismiss, onOpen }: { memory: Memory; onDismiss: () => void; onOpen: () => void }) {
   const cover = getCoverImage(memory);
@@ -13,8 +14,7 @@ export function ThisDayBanner({ memory, onDismiss, onOpen }: { memory: Memory; o
     <div className="relative overflow-hidden rounded-xl border border-[var(--border)] bg-white p-5 shadow-soft">
       {cover ? (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={cover.base64} alt="" className="absolute inset-0 h-full w-full object-cover opacity-10" loading="lazy" />
+          <MediaView media={cover} className="absolute inset-0 h-full w-full object-cover opacity-10" />
           <div className="absolute inset-0 bg-white/80" />
         </>
       ) : null}

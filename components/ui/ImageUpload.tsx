@@ -1,13 +1,12 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
-import { ImagePlus, Star, Trash2 } from "lucide-react";
+import { FileVideo, ImagePlus, Star, Trash2 } from "lucide-react";
 import type { MemoryImage } from "@/lib/types";
-import { processImageFile } from "@/lib/imageUtils";
+import { ACCEPTED_MEDIA_EXTENSIONS, isSupportedMediaFile, processMediaFile } from "@/lib/imageUtils";
 import { Button } from "@/components/ui/Button";
 import { cn, normalizeImages } from "@/lib/utils";
-
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+import { MediaView } from "@/components/ui/MediaView";
 
 export function ImageUpload({
   memoryId,
@@ -30,21 +29,21 @@ export function ImageUpload({
     }
 
     const files = Array.from(fileList).filter((file) => {
-      const accepted = ACCEPTED_TYPES.includes(file.type) || file.name.toLowerCase().endsWith(".heic");
+      const accepted = isSupportedMediaFile(file);
       if (!accepted) {
-        onWarning("That file type is not supported. Try JPEG, PNG, WEBP, or HEIC.");
+        onWarning("That file type is not supported. Try a common image or video file.");
       }
       return accepted;
     });
 
     if (images.length + files.length > 20) {
-      onWarning("That's a wonderfully full memory. Above 20 images, backups can take a little longer.");
+      onWarning("That's a wonderfully full memory. Above 20 media files, backups can take a little longer.");
     }
 
     setBusy(true);
     try {
       const processed = await Promise.all(
-        files.map((file, index) => processImageFile(file, memoryId, images.length + index)),
+        files.map((file, index) => processMediaFile(file, memoryId, images.length + index)),
       );
       const warnings = processed.map((result) => result.warning).filter((warning): warning is string => Boolean(warning));
       warnings.forEach(onWarning);
@@ -57,7 +56,7 @@ export function ImageUpload({
         onChange(normalizeImages(next));
       }
     } catch (error) {
-      onWarning(error instanceof Error ? error.message : "One image could not be added.");
+      onWarning(error instanceof Error ? error.message : "One file could not be added.");
     } finally {
       setBusy(false);
     }
@@ -100,12 +99,12 @@ export function ImageUpload({
           ref={inputRef}
           type="file"
           multiple
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic"
+          accept={["image/*", "video/*", ...ACCEPTED_MEDIA_EXTENSIONS].join(",")}
           onChange={onInputChange}
           className="sr-only"
         />
         <ImagePlus className="mx-auto h-7 w-7 text-[var(--accent)]" aria-hidden="true" />
-        <p className="mt-2 text-sm font-semibold text-[var(--text)]">Drop images here</p>
+        <p className="mt-2 text-sm font-semibold text-[var(--text)]">Drop photos or videos here</p>
         <p className="mt-1 text-sm text-[var(--muted)]">or choose a few from this device</p>
         <Button
           type="button"
@@ -114,7 +113,7 @@ export function ImageUpload({
           disabled={busy}
           onClick={() => inputRef.current?.click()}
         >
-          {busy ? "Preparing images..." : "Choose Images"}
+          {busy ? "Preparing files..." : "Choose Media"}
         </Button>
       </div>
 
@@ -122,8 +121,12 @@ export function ImageUpload({
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {images.map((image) => (
             <div key={image.id} className="group relative aspect-square overflow-hidden rounded-xl border border-[var(--border)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image.base64} alt="" className="h-full w-full object-cover" loading="lazy" />
+              <MediaView media={image} className="h-full w-full object-cover" />
+              {image.mediaType === "video" ? (
+                <span className="absolute bottom-1 left-1 rounded-full bg-white/90 p-1 text-[var(--text)]">
+                  <FileVideo className="h-3.5 w-3.5" aria-hidden="true" />
+                </span>
+              ) : null}
               <div className="absolute inset-x-1 top-1 flex justify-between gap-1">
                 {image.isCover ? (
                   <span className="rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">

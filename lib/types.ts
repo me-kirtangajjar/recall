@@ -8,13 +8,21 @@ export type MemoryTag =
   | "Friendship"
   | "Everyday";
 
-export interface MemoryImage {
+export type MemoryMediaType = "image" | "video";
+
+export interface MemoryMedia {
   id: string;
   zipPath: string;
   base64: string;
   isCover: boolean;
+  mediaType: MemoryMediaType;
+  mimeType: string;
+  fileName: string;
+  fileSize: number;
   originalFile?: File;
 }
+
+export type MemoryImage = MemoryMedia;
 
 export interface Memory {
   id: string;
@@ -23,7 +31,7 @@ export interface Memory {
   time: string | null;
   description: string;
   tag: MemoryTag | null;
-  images: MemoryImage[];
+  images: MemoryMedia[];
   createdAt: string;
   updatedAt: string;
 }
